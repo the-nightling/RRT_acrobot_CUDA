@@ -25,10 +25,11 @@ int main(void) {
 	double *device_path_solns, *host_path_solns;
 	double *device_control_solns, *host_control_solns;
 
-	// Used to get the start state for each thread
-	//double *dev_start_state_0, *host_start_state_0;
-	//host_start_state_0 = (double *) malloc(2 * 2016 * sizeof(double));
-	//cudaMalloc(&dev_start_state_0, 2 * 2016 * sizeof(double));
+	//* Used to get the start state for each thread
+	double *dev_start_state_0, *host_start_state_0;
+	host_start_state_0 = (double *) malloc(DIMENSIONS * NUM_RESULTS_PER_THREAD * sizeof(double));
+	cudaMalloc(&dev_start_state_0, DIMENSIONS * NUM_RESULTS_PER_THREAD * sizeof(double));
+	//*/
 
 	// Allocate host and device memory to store adjacency matrix
 	host_adjacency_matrix = (int *) malloc(
@@ -58,7 +59,8 @@ int main(void) {
 
 	// Run parallel RRT algorithm
 	RRT_kernel<<<NUM_BLOCKS, NUM_THREADS>>>(device_state, device_adjacency_matrix,
-			device_path_solns, device_control_solns, NULL);
+			device_path_solns, device_control_solns, dev_start_state_0);
+
 
 	// Copy results from GPU (device) to PC (host)
 	cudaMemcpy(host_adjacency_matrix, device_adjacency_matrix,
@@ -73,10 +75,12 @@ int main(void) {
 			NUM_OF_GOAL_STATES* LENGTH_OF_SOLN_PATH * NUM_THREADS * NUM_BLOCKS * sizeof(double),// copy control solutions from device to host
 			cudaMemcpyDeviceToHost);
 
-	// copy start state of each thread and output to console
-	//cudaMemcpy(host_start_state_0, dev_start_state_0, 2 * 2016 * sizeof(double), cudaMemcpyDeviceToHost);
-	//for(int i=0; i < 2016; i++)
-	//		printf("idx: %d State:%f, %f\n",i,host_start_state_0[2*i],host_start_state_0[2*i+1]);
+
+	//* copy start state of each thread and output to console
+	cudaMemcpy(host_start_state_0, dev_start_state_0, DIMENSIONS * NUM_RESULTS_PER_THREAD * sizeof(double), cudaMemcpyDeviceToHost);
+	for(int i=0; i < NUM_RESULTS_PER_THREAD; i++)
+			printf("idx: %d State:%f, %f\n",i,host_start_state_0[DIMENSIONS*i],host_start_state_0[DIMENSIONS*i+1]);
+	//*/
 
 
 	// Initialize variables used to obtain shortest path solution using Floyd-Warshall algorithm
@@ -99,7 +103,7 @@ int main(void) {
 	}
 	//*/
 
-	//* Root indices on solution path (using this since I already know the solution from previous run)
+	/* Root indices on solution path (using this since I already know the solution from previous run)
 	root_indices[0] = 975;
 	root_indices[1] = 1017;
 	root_indices[2] = 1059;
@@ -141,12 +145,12 @@ int main(void) {
 		root_index = root_indices[i];
 		next_root_index = root_indices[i+1];
 		for(int goal_index=0; goal_index < 7; goal_index++){
-			start_of_path = 2*NUM_OF_GOAL_STATES*LENGTH_OF_SOLN_PATH*root_index + goal_index*2*LENGTH_OF_SOLN_PATH;
-			start_of_next_path = 2*NUM_OF_GOAL_STATES*LENGTH_OF_SOLN_PATH*next_root_index + goal_index*2*LENGTH_OF_SOLN_PATH;
-			root_x = host_path_solns[start_of_next_path-4+(2*LENGTH_OF_SOLN_PATH)];
-			root_y = host_path_solns[start_of_next_path-3+(2*LENGTH_OF_SOLN_PATH)];
-			goal_x = host_path_solns[start_of_path-2+(2*LENGTH_OF_SOLN_PATH)];
-			goal_y = host_path_solns[start_of_path-1+(2*LENGTH_OF_SOLN_PATH)];
+			start_of_path = DIMENSIONS*NUM_OF_GOAL_STATES*LENGTH_OF_SOLN_PATH*root_index + goal_index*DIMENSIONS*LENGTH_OF_SOLN_PATH;
+			start_of_next_path = DIMENSIONS*NUM_OF_GOAL_STATES*LENGTH_OF_SOLN_PATH*next_root_index + goal_index*DIMENSIONS*LENGTH_OF_SOLN_PATH;
+			root_x = host_path_solns[start_of_next_path-4+(DIMENSIONS*LENGTH_OF_SOLN_PATH)];
+			root_y = host_path_solns[start_of_next_path-3+(DIMENSIONS*LENGTH_OF_SOLN_PATH)];
+			goal_x = host_path_solns[start_of_path-2+(DIMENSIONS*LENGTH_OF_SOLN_PATH)];
+			goal_y = host_path_solns[start_of_path-1+(DIMENSIONS*LENGTH_OF_SOLN_PATH)];
 
 			if((root_x+root_y != 0.000000) && (fabs(root_x-goal_x) < 0.000001) && (fabs(root_y-goal_y) < 0.000001)){
 
@@ -157,7 +161,7 @@ int main(void) {
 						break;
 
 					//printf("%f\n", host_path_solns[start_of_path+i]);
-					solution_path.push_back(std::make_pair(std::make_pair(host_path_solns[start_of_path+(2*i)], host_path_solns[start_of_path+(2*i+1)]), host_control_solns[(start_of_path/2)+i] ));
+					solution_path.push_back(std::make_pair(std::make_pair(host_path_solns[start_of_path+(DIMENSIONS*i)], host_path_solns[start_of_path+(DIMENSIONS*i+1)]), host_control_solns[(start_of_path/DIMENSIONS)+i] ));
 				}
 			}
 		}

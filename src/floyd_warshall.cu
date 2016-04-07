@@ -26,7 +26,7 @@ void _get_full_paths(const int *D, const int *Dpath, const int N, int *roots){
 	int start_vertex=-1,end_vertex=-1;
 	vector<Piii> path;
 
-	//*
+	/*
 	path.clear();
 	start_vertex = 975;
 	end_vertex = 997;
@@ -43,7 +43,7 @@ void _get_full_paths(const int *D, const int *Dpath, const int N, int *roots){
 	}
 	//*/
 
-	/*
+	//*
 	do{
 		path.clear();
 		cout<<"Enter start vertex #:";

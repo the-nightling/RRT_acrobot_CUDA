@@ -13,10 +13,9 @@
 #include "device_launch_parameters.h"
 
 //these can be altered on user depending on data set and type of operation(random test, read from file etc)
-//#define BLOCK_SIZE 256
 #define BLOCK_SIZE 256
 #define RANGE 1
-#define RANDOM_GSIZE 2016
+#define RANDOM_GSIZE GRID_X * GRID_Y * NUM_BLOCKS
 //#define INF (1<<22)
 #define INF 9999
 
